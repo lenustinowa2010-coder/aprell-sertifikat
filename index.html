@@ -182,12 +182,24 @@ const LS = {
 };
 
 const defaultCoords = {
-  date:   {x:330, y:1217},
-  number: {x:792, y:1217},
-  amount: {x:413, y:1175}
+  date:   {x:190, y:1219},
+  number: {x:770, y:1219},
+  amount: {x:413, y:1170}
 };
 
-let coords = JSON.parse(localStorage.getItem(LS.coords) || 'null') || structuredClone(defaultCoords);
+const COORDS_VERSION = 3;
+let coords;
+{
+  const savedV = +(localStorage.getItem('aprell_coords_ver') || 0);
+  const saved = JSON.parse(localStorage.getItem(LS.coords) || 'null');
+  if(saved && savedV === COORDS_VERSION){
+    coords = saved;
+  } else {
+    coords = structuredClone(defaultCoords);
+    localStorage.setItem(LS.coords, JSON.stringify(coords));
+    localStorage.setItem('aprell_coords_ver', COORDS_VERSION);
+  }
+}
 
 const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
@@ -233,12 +245,11 @@ function draw(){
   // Номер — справа, выровнен по правому краю (поверх 0576)
   const numVal = elNum.value.trim();
   if(numVal){
-    // стереть старый 0576: взять чистую полосу фона прямо НАД текстом и растянуть вниз на зону
-    const zoneL = coords.number.x - 134, zoneW = 142;
-    const eraseT = coords.number.y - 26, eraseH = 34;   // зона, где лежит старый текст
-    const srcT   = coords.number.y - 52;                 // чистый фон выше текста
-    const srcH   = 14;
-    ctx.drawImage(img, zoneL, srcT, zoneW, srcH, zoneL, eraseT, zoneW, eraseH);
+    // стереть старый номер (фикс. позиция на макете ~x686-802 / y1200-1230)
+    // источник — чистая полоса фона выше, растянутая на зону текста
+    const erL = 686, erW = 118, erT = 1198, erH = 34;
+    const sT  = 1150;  // чистый фон без текста
+    ctx.drawImage(img, erL, sT, erW, 12, erL, erT, erW, erH);
     ctx.fillStyle = '#5E1622';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'alphabetic';
