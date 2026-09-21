@@ -13,7 +13,9 @@
   function controls() {
     elNum.disabled = !ready || busy;
     nextButton.disabled = !ready || busy;
-    download.disabled = !ready || busy || !reservedNumber || reservedNumber !== elNum.value.trim() || !imgReady;
+    // Export the displayed card, including an existing number after reload.
+    // Reserving a new number is a separate operation and must not block export.
+    download.disabled = !imgReady || !elNum.value.trim();
   }
   async function api(body) {
     if (!endpoint) throw new Error('Общее хранилище ещё не подключено.');
@@ -106,10 +108,11 @@
   elNum.addEventListener('keydown', event => { if (event.key === 'Enter') reserve('reserve'); });
   nextButton.addEventListener('click', () => reserve('next'));
   download.addEventListener('click', () => {
-    if (download.disabled || reservedNumber !== elNum.value.trim()) return;
+    const number = elNum.value.trim();
+    if (!imgReady || !number) return;
     draw();
     const link = document.createElement('a');
-    link.download = 'APRELL_сертификат_' + reservedNumber + '.jpg';
+    link.download = 'APRELL_сертификат_' + number.replace(/[^\w.-]/g, '_') + '.jpg';
     link.href = cv.toDataURL('image/jpeg', 0.95);
     link.click();
   });
