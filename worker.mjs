@@ -1,16 +1,20 @@
 import { DurableObject } from 'cloudflare:workers';
+import { sheetNumbers } from './sheet-numbers.mjs';
 import { CounterError, readCounter, reserveNumber } from './counter-core.mjs';
 
 export class CertificateCounter extends DurableObject {
-  async read() { return readCounter(this.ctx.storage); }
-  async reserve(body) { return reserveNumber(this.ctx.storage, body); }
   async fetch(request) {
     try {
-      return Response.json(request.method === 'GET'
-        ? await this.read() : await this.reserve(await request.json()));
-    } catch (error) {
-      return Response.json({ error: error instanceof CounterError ? error.message : 'Не удалось сохранить номер.' },
-        { status: error instanceof CounterError ? error.status : 500 });
+      const body=request.method==='GET'?null:await request.json();
+      // Longer manually entered numbers do not depend on Google Sheets.
+      const sheet=body?.action==='issue' && /^\d{5,9}$/.test(body.number||'')
+        ? new Set() : await sheetNumbers();
+      return Response.json(body
+        ? await reserveNumber(this.ctx.storage,body,sheet)
+        : await readCounter(this.ctx.storage,sheet));
+    } catch(error) {
+      return Response.json({error:error instanceof CounterError?error.message:'Не удалось проверить и сохранить номер.'},
+        {status:error instanceof CounterError?error.status:500});
     }
   }
 }
