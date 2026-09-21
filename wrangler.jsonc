@@ -1,0 +1,9 @@
+{
+  "name": "aprell-certificate-counter",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-09-21",
+  "durable_objects": {
+    "bindings": [{ "name": "COUNTER", "class_name": "CertificateCounter" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["CertificateCounter"] }]
+}

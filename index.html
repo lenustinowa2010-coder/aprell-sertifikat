@@ -174,8 +174,13 @@ summary{cursor:pointer;color:var(--burgundy);font-weight:700}
     <div class="hint">Формат: 25.06.2026</div>
 
     <label for="number">Номер сертификата</label>
-    <input id="number" type="text" placeholder="0576" autocomplete="off">
-    <div class="hint">Запоминается последний введённый</div>
+    <input id="number" type="text" placeholder="Загрузка…" inputmode="numeric" autocomplete="off" disabled>
+    <div class="hint" id="counter-status" role="status" aria-live="polite">Подключение к общему счётчику…</div>
+    <div id="counter-login">
+      <label for="counter-code">Код доступа команды</label>
+      <input id="counter-code" type="password" autocomplete="off">
+      <button class="btn-ghost" id="counter-connect" style="margin-top:8px">Подключить</button>
+    </div>
 
     <label for="amount">Номинал, ₽</label>
     <input id="amount" type="text" inputmode="numeric" placeholder="15000" autocomplete="off">
@@ -274,10 +279,8 @@ let imgReady = false;
 const $ = id => document.getElementById(id);
 const elDate = $('date'), elNum = $('number'), elAmt = $('amount'), elWish = $('wish');
 
-// restore last number
-const lastNum = localStorage.getItem(LS.last);
-if(lastNum) elNum.value = lastNum;
-
+// The last number is loaded only from the shared service.
+let lastNum = '';
 // fill coord inputs
 function syncCoordInputs(){
   $('dx').value=coords.date.x;   $('dy').value=coords.date.y;
@@ -422,11 +425,6 @@ if(document.fonts && document.fonts.ready){
 
 [elDate, elNum, elAmt, elWish].forEach(el=> el.addEventListener('input', draw));
 
-// save last number on change
-elNum.addEventListener('change', ()=>{
-  localStorage.setItem(LS.last, elNum.value.trim());
-});
-
 // coord editing
 ['dx','dy','nx','ny','ax','ay','wx','wy','wang','wsize'].forEach(id=>{
   $(id).addEventListener('input', ()=>{
@@ -481,32 +479,9 @@ $('reset-coords').addEventListener('click', ()=>{
   draw();
 });
 
-// "следующий номер" — инкремент с сохранением ведущих нулей
-$('next').addEventListener('click', ()=>{
-  const cur = (elNum.value.trim() || lastNum || '0');
-  const m = cur.match(/^(\D*)(\d+)(\D*)$/);
-  if(m){
-    const width = m[2].length;
-    const next = String(Number(m[2])+1).padStart(width,'0');
-    elNum.value = m[1]+next+m[3];
-  } else {
-    elNum.value = cur;
-  }
-  localStorage.setItem(LS.last, elNum.value.trim());
-  draw();
-});
-
-// download
-$('download').addEventListener('click', ()=>{
-  localStorage.setItem(LS.last, elNum.value.trim());
-  draw();
-  const url = cv.toDataURL('image/jpeg', 0.95);
-  const a = document.createElement('a');
-  const numForName = (elNum.value.trim()||'card').replace(/[^\w.-]/g,'_');
-  a.download = 'APRELL_сертификат_'+numForName+'.jpg';
-  a.href = url;
-  a.click();
-});
+// Number reservation and download are managed by the shared counter.
 </script>
+<script src="counter-config.js"></script>
+<script src="shared-counter.js"></script>
 </body>
 </html>
