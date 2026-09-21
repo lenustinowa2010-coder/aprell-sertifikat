@@ -176,11 +176,6 @@ summary{cursor:pointer;color:var(--burgundy);font-weight:700}
     <label for="number">Номер сертификата</label>
     <input id="number" type="text" placeholder="Загрузка…" inputmode="numeric" autocomplete="off" disabled>
     <div class="hint" id="counter-status" role="status" aria-live="polite">Подключение к общему счётчику…</div>
-    <div id="counter-login">
-      <label for="counter-code">Код доступа команды</label>
-      <input id="counter-code" type="password" autocomplete="off">
-      <button class="btn-ghost" id="counter-connect" style="margin-top:8px">Подключить</button>
-    </div>
 
     <label for="amount">Номинал, ₽</label>
     <input id="amount" type="text" inputmode="numeric" placeholder="15000" autocomplete="off">
@@ -482,6 +477,6 @@ $('reset-coords').addEventListener('click', ()=>{
 // Number reservation and download are managed by the shared counter.
 </script>
 <script src="counter-config.js"></script>
-<script src="shared-counter.js"></script>
+<script src="shared-counter.js?v=2"></script>
 </body>
 </html>

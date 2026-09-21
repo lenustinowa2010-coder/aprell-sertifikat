@@ -1,11 +1,8 @@
 (() => {
   const status = $('counter-status');
-  const login = $('counter-login');
-  const connect = $('counter-connect');
   const nextButton = $('next');
   const download = $('download');
   const endpoint = window.APRELL_COUNTER_URL;
-  let accessCode = '';
   let ready = false;
   let busy = false;
   let reservedNumber = '';
@@ -16,14 +13,13 @@
   function controls() {
     elNum.disabled = !ready || busy;
     nextButton.disabled = !ready || busy;
-    connect.disabled = busy;
     download.disabled = !ready || busy || !reservedNumber || reservedNumber !== elNum.value.trim() || !imgReady;
   }
   async function api(body) {
     if (!endpoint) throw new Error('Общее хранилище ещё не подключено.');
     const response = await fetch(endpoint + '/counter', {
       method: body ? 'POST' : 'GET', cache: 'no-store',
-      headers: { Authorization: 'Bearer ' + accessCode, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      headers: body ? { 'Content-Type': 'application/json' } : {},
       body: body ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(15000),
     });
@@ -37,11 +33,6 @@
     return data;
   }
   function failure(error) {
-    if (error.status === 401) {
-      ready = false;
-      login.hidden = false;
-      accessCode = '';
-    }
     message(error.name === 'TimeoutError' || error instanceof TypeError
       ? 'Нет связи с общим счётчиком. Номер не подтверждён; повторите то же действие.'
       : error.message);
@@ -63,10 +54,8 @@
     } catch (error) { failure(error); }
     controls();
   }
-  connect.addEventListener('click', async () => {
+  async function initialize() {
     if (busy) return;
-    accessCode = $('counter-code').value.trim();
-    if (!accessCode) { message('Введите код доступа команды.'); return; }
     busy = true; controls();
     try {
       const data = await api();
@@ -74,14 +63,11 @@
       elNum.value = lastNum;
       reservedNumber = '';
       ready = true;
-      login.hidden = true;
-      $('counter-code').value = '';
       message('Последний общий номер: ' + lastNum + '. Нажмите «Следующий номер».');
       draw();
     } catch (error) { failure(error); }
     finally { busy = false; controls(); }
-  });
-  $('counter-code').addEventListener('keydown', event => { if (event.key === 'Enter') connect.click(); });
+  }
   async function reserve(action) {
     if (!ready || busy) return;
     const number = elNum.value.trim();
@@ -128,9 +114,11 @@
     link.click();
   });
   img.addEventListener('load', controls);
-  window.addEventListener('focus', refresh);
-  document.addEventListener('visibilitychange', refresh);
-  setInterval(refresh, 15000);
-  message('Введите код команды, чтобы загрузить последний общий номер.');
+  function sync() { if (!document.hidden) return ready ? refresh() : initialize(); }
+  window.addEventListener('focus', sync);
+  document.addEventListener('visibilitychange', sync);
+  setInterval(sync, 15000);
+  message('Загружаем последний общий номер…');
   controls();
+  initialize();
 })();

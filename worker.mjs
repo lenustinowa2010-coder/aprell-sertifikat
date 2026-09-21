@@ -21,7 +21,7 @@ export default {
     const headers = {
       'Access-Control-Allow-Origin': 'https://lenustinowa2010-coder.github.io',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type',
       'Cache-Control': 'no-store', 'Vary': 'Origin',
     };
     const reply = (body, status) => Response.json(body, { status, headers });
@@ -29,8 +29,6 @@ export default {
     if (new URL(request.url).pathname !== '/counter') return reply({ error: 'Не найдено.' }, 404);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
     if (!['GET', 'POST'].includes(request.method)) return reply({ error: 'Метод не поддерживается.' }, 405);
-    if (!env.ACCESS_CODE) return reply({ error: 'Общее хранилище ещё не настроено.' }, 503);
-    if (request.headers.get('Authorization') !== 'Bearer ' + env.ACCESS_CODE) return reply({ error: 'Введите код доступа команды.' }, 401);
     const stub = env.COUNTER.get(env.COUNTER.idFromName('aprell-certificates'));
     try {
       if (request.method === 'POST' && (await request.clone().text()).length > 1024) return reply({ error: 'Запрос слишком большой.' }, 413);
