@@ -2,12 +2,12 @@
   const status=$('counter-status'), nextButton=$('next'), download=$('download');
   const endpoint=window.APRELL_COUNTER_URL;
   let busy=false, manual=false, reservation=null, pending=null, revision=0;
-  let ready=false;
+  let blockedNumber='';
   const message=text=>{status.textContent=text;};
   function controls(){
     elNum.disabled=busy||!!pending;
     nextButton.disabled=busy||(!!pending&&pending.body.action!=='next');
-    download.disabled=busy||!imgReady||!/^\d{4,9}$/.test(elNum.value.trim())||(!!pending&&pending.body.action!=='issue');
+    download.disabled=busy||!imgReady||elNum.value.trim()===blockedNumber||!/^\d{4,9}$/.test(elNum.value.trim())||(!!pending&&pending.body.action!=='issue');
   }
   async function api(body){
     const response=await fetch(endpoint+'/counter',{
@@ -30,11 +30,11 @@
     try{
       const data=await api();
       if(started!==revision||busy||pending)return;
-      lastNum=data.last; ready=true;
-      if(!manual&&!reservation){elNum.value=data.next||'';draw();}
-      message(manual
-        ? 'Ручной номер не меняет общий счётчик. При скачивании он будет отмечен как выпущенный.'
-        : 'Номер для новой карты: '+elNum.value+'. При скачивании проверим и отметим его как выпущенный.');
+      lastNum=data.last;
+      if(!manual&&!reservation){
+        elNum.value=data.next||'';draw();
+        message('Номер для новой карты: '+elNum.value+'. При скачивании проверим и отметим его как выпущенный.');
+      }
     }catch(error){failure(error);}
     controls();
   }
@@ -66,12 +66,13 @@
       }
     }catch(error){
       // Keep the same request and image if the response was lost, so retry is safe.
+      if(error.status===409&&action==='issue')blockedNumber=number;
       if(error.status&&error.status<500)pending=null;
       failure(error);
     }finally{busy=false;revision++;controls();}
   }
   elNum.addEventListener('input',()=>{
-    manual=true;revision++;controls();
+    manual=true;blockedNumber='';revision++;controls();
     message(/^\d{4,9}$/.test(elNum.value.trim())
       ? 'Ручной номер не меняет общий счётчик. Перед скачиванием проверим, свободен ли он.'
       : 'Укажите от 4 до 9 цифр номера.');
