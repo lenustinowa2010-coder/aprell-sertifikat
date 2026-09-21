@@ -6,6 +6,7 @@
   let ready = false;
   let busy = false;
   let reservedNumber = '';
+  let manualNumber = false;
   let pending = null;
   let revision = 0;
 
@@ -47,12 +48,14 @@
       if (busy || revision !== startedAt) return;
       const previousLast = lastNum;
       lastNum = data.last;
-      if (!reservedNumber && !pending && document.activeElement !== elNum && elNum.value === previousLast) {
+      if (!manualNumber && !reservedNumber && !pending && document.activeElement !== elNum && elNum.value === previousLast) {
         elNum.value = lastNum;
         draw();
       }
       // Do not overwrite an active certificate or a manager's unfinished input.
-      message('Последний общий номер: ' + lastNum + (reservedNumber ? '. Ваш номер: ' + reservedNumber + '.' : '. Нажмите «Следующий номер».'));
+      message(manualNumber
+        ? 'Номер на карте введён вручную и не сохраняется. Последний общий номер: ' + lastNum + '.'
+        : 'Последний общий номер: ' + lastNum + (reservedNumber ? '. Ваш номер: ' + reservedNumber + '.' : '. Нажмите «Следующий номер».'));
     } catch (error) { failure(error); }
     controls();
   }
@@ -70,24 +73,15 @@
     } catch (error) { failure(error); }
     finally { busy = false; controls(); }
   }
-  async function reserve(action) {
+  async function reserveNext() {
     if (!ready || busy) return;
-    const number = elNum.value.trim();
-    if (action === 'reserve' && number === reservedNumber) return;
-    if (action === 'reserve' && !/^\d{1,9}$/.test(number)) {
-      reservedNumber = ''; message('Укажите номер цифрами, не более 9 знаков.'); controls(); return;
-    }
-    const fingerprint = JSON.stringify([action, action === 'reserve' ? number : null]);
-    if (pending && pending.fingerprint !== fingerprint) {
-      message('Предыдущий запрос не подтверждён. Повторите то же действие, чтобы узнать его результат.');
-      return;
-    }
-    if (!pending) pending = { fingerprint, body: { action, requestId: crypto.randomUUID(), ...(action === 'reserve' ? { number } : {}) } };
+    if (!pending) pending = { body: { action: 'next', requestId: crypto.randomUUID() } };
     busy = true; revision++; reservedNumber = ''; controls();
     message('Сохраняем номер в общем хранилище…');
     try {
       const data = await api(pending.body);
       if (!/^\d{4,9}$/.test(data.number || '')) throw new Error('Хранилище не подтвердило номер.');
+      manualNumber = false;
       reservedNumber = data.number;
       elNum.value = reservedNumber;
       lastNum = data.last;
@@ -100,13 +94,13 @@
     } finally { busy = false; revision++; controls(); }
   }
   elNum.addEventListener('input', () => {
+    manualNumber = true;
     reservedNumber = '';
+    revision++;
     controls();
-    message('Номер изменён. Нажмите Enter или выйдите из поля, чтобы сохранить его для всех.');
+    message('Номер на карте введён вручную и не сохраняется. Последний общий номер: ' + lastNum + '.');
   });
-  elNum.addEventListener('change', () => reserve('reserve'));
-  elNum.addEventListener('keydown', event => { if (event.key === 'Enter') reserve('reserve'); });
-  nextButton.addEventListener('click', () => reserve('next'));
+  nextButton.addEventListener('click', reserveNext);
   download.addEventListener('click', () => {
     const number = elNum.value.trim();
     if (!imgReady || !number) return;
