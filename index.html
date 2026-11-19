@@ -161,6 +161,18 @@ summary{cursor:pointer;color:var(--burgundy);font-weight:700}
 .coord-grid span{font-size:11px;color:#777}
 .coord-grid input{padding:6px 8px;font-size:13px}
 @media(max-width:760px){.panel{width:100%}.preview-wrap{width:100%}}
+
+.design-picker{border:0;margin:0 0 20px;min-width:0}
+.design-picker legend{font-size:14px;font-weight:600;color:var(--burgundy);margin-bottom:10px}
+.design-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.design-option{position:relative;margin:0!important;text-transform:none;letter-spacing:0;cursor:pointer;text-align:center}
+.design-option input{position:absolute;opacity:0;width:1px;height:1px;padding:0}
+.design-option img{display:block;width:100%;aspect-ratio:827/1280;object-fit:cover;border:2px solid transparent;border-radius:6px;padding:2px}
+.design-option span{display:block;font-size:12px;line-height:1.2;margin-top:5px;font-weight:500}
+.design-option input:checked+img{border-color:var(--burgundy);box-shadow:0 0 0 1px var(--burgundy)}
+.design-option input:focus-visible+img{outline:3px solid var(--sky);outline-offset:3px}
+.design-picker:disabled{opacity:.6}
+.design-status{font-size:13px;color:var(--burgundy);margin-top:8px}
 </style>
 </head>
 <body>
@@ -169,6 +181,17 @@ summary{cursor:pointer;color:var(--burgundy);font-weight:700}
 
 <div class="layout">
   <div class="panel">
+    <fieldset class="design-picker" id="design-picker">
+      <legend>Оформление карты</legend>
+      <div class="design-options">
+        <label class="design-option"><input type="radio" name="design" value="original" checked><img id="original-thumbnail" alt=""><span>Цветы</span></label>
+        <label class="design-option"><input type="radio" name="design" value="red-bow" ><img src="images/red-bow.png" alt=""><span>Красный бант</span></label>
+        <label class="design-option"><input type="radio" name="design" value="burgundy-ribbons" ><img src="images/burgundy-ribbons.png" alt=""><span>Бордовые ленты</span></label>
+        <label class="design-option"><input type="radio" name="design" value="pink-bow" ><img src="images/pink-bow.png" alt=""><span>Розовый бант</span></label>
+      </div>
+      <div class="design-status" id="design-status" role="status" aria-live="polite"></div>
+    </fieldset>
+
     <label for="date">Дата выдачи</label>
     <input id="date" type="text" placeholder="ДД.ММ.ГГГГ" maxlength="10" autocomplete="off">
     <div class="hint">Формат: 25.06.2026</div>
@@ -270,6 +293,13 @@ const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
 const img = new Image();
 let imgReady = false;
+const designs = {
+  original: IMG_SRC,
+  'red-bow': 'images/red-bow.png',
+  'burgundy-ribbons': 'images/burgundy-ribbons.png',
+  'pink-bow': 'images/pink-bow.png'
+};
+let selectedDesign = 'original';
 
 const $ = id => document.getElementById(id);
 const elDate = $('date'), elNum = $('number'), elAmt = $('amount'), elWish = $('wish');
@@ -314,7 +344,7 @@ function draw(){
     // источник — чистая полоса фона выше, растянутая на зону текста
     const erL = 686, erW = 118, erT = 1198, erH = 34;
     const sT  = 1150;  // чистый фон без текста
-    ctx.drawImage(img, erL, sT, erW, 12, erL, erT, erW, erH);
+    if(selectedDesign === 'original') ctx.drawImage(img, erL, sT, erW, 12, erL, erT, erW, erH);
     ctx.fillStyle = '#5E1622';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'alphabetic';
@@ -387,8 +417,36 @@ function draw(){
   }
 }
 
-img.onload = ()=>{ imgReady=true; draw(); };
-img.src = IMG_SRC;
+$('original-thumbnail').src = IMG_SRC;
+function selectDesign(value){
+  if(!Object.hasOwn(designs, value)) return;
+  selectedDesign = value;
+  imgReady = false;
+  $('download').disabled = true;
+  cv.setAttribute('aria-busy', 'true');
+  ctx.clearRect(0,0,827,1280);
+  $('design-status').textContent = 'Загружаем изображение…';
+  document.dispatchEvent(new Event('aprell-design-state'));
+  img.src = designs[value];
+}
+img.onload = ()=>{
+  imgReady = true;
+  cv.setAttribute('aria-busy', 'false');
+  $('design-status').textContent = '';
+  draw();
+  document.dispatchEvent(new Event('aprell-design-state'));
+};
+img.onerror = ()=>{
+  imgReady = false;
+  cv.setAttribute('aria-busy', 'false');
+  $('design-status').textContent = 'Изображение не загрузилось. Выберите оформление ещё раз.';
+  document.dispatchEvent(new Event('aprell-design-state'));
+};
+document.querySelectorAll('input[name="design"]').forEach(input=>{
+  input.addEventListener('change', ()=>selectDesign(input.value));
+  input.addEventListener('click', ()=>{ if(!imgReady && selectedDesign === input.value) selectDesign(input.value); });
+});
+selectDesign('original');
 
 // ensure fonts loaded before first crisp draw
 function forceCaveatActivation(){
@@ -477,6 +535,6 @@ $('reset-coords').addEventListener('click', ()=>{
 // Number reservation and download are managed by the shared counter.
 </script>
 <script src="counter-config.js"></script>
-<script src="shared-counter.js?v=6"></script>
+<script src="shared-counter.js?v=7"></script>
 </body>
 </html>

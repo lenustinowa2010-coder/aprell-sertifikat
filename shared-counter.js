@@ -5,6 +5,7 @@
   let blockedNumber='';
   const message=text=>{status.textContent=text;};
   function controls(){
+    $('design-picker').disabled=busy||!!pending;
     elNum.disabled=busy||!!pending;
     nextButton.disabled=busy||(!!pending&&pending.body.action!=='next');
     download.disabled=busy||!imgReady||elNum.value.trim()===blockedNumber||!/^\d{4,9}$/.test(elNum.value.trim())||(!!pending&&pending.body.action!=='issue');
@@ -80,6 +81,7 @@
   nextButton.addEventListener('click',()=>run('next'));
   download.addEventListener('click',()=>run('issue'));
   img.addEventListener('load',controls);
+  document.addEventListener('aprell-design-state',controls);
   window.addEventListener('focus',refresh);
   document.addEventListener('visibilitychange',refresh);
   setInterval(refresh,15000);
