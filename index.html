@@ -184,9 +184,9 @@ summary{cursor:pointer;color:var(--burgundy);font-weight:700}
     <fieldset class="design-picker" id="design-picker">
       <legend>Оформление карты</legend>
       <div class="design-options">
-        <label class="design-option"><input type="radio" name="design" value="red-bow" ><img src="images/red-bow.png" alt=""><span>Красный бант</span></label>
+        <label class="design-option"><input type="radio" name="design" value="red-bow" ><img src="images/red-original.jpg" alt=""><span>Красный бант</span></label>
         <label class="design-option"><input type="radio" name="design" value="burgundy-ribbons" checked><img src="images/burgundy-original.jpg" alt=""><span>Бордовые ленты</span></label>
-        <label class="design-option"><input type="radio" name="design" value="pink-bow" ><img src="images/pink-bow.png" alt=""><span>Розовый бант</span></label>
+        <label class="design-option"><input type="radio" name="design" value="pink-bow" ><img src="images/pink-original.jpg" alt=""><span>Розовый бант</span></label>
         <label class="design-option"><input type="radio" name="design" value="original"><img id="original-thumbnail" alt=""><span>Цветы</span></label>
       </div>
       <div class="design-status" id="design-status" role="status" aria-live="polite"></div>
@@ -295,18 +295,22 @@ const img = new Image();
 let imgReady = false;
 const designs = {
   original: IMG_SRC,
-  'red-bow': 'images/red-bow.png',
+  'red-bow': 'images/red-original.jpg',
   'burgundy-ribbons': 'images/burgundy-original.jpg',
-  'pink-bow': 'images/pink-bow.png'
+  'pink-bow': 'images/pink-original.jpg'
 };
 let selectedDesign = 'burgundy-ribbons';
-const burgundyFooter = new Image();
-const burgundyFooterReady = new Promise((resolve, reject)=>{
-  burgundyFooter.onload = resolve;
-  burgundyFooter.onerror = reject;
-});
-burgundyFooterReady.catch(()=>{});
-burgundyFooter.src = 'images/burgundy-ribbons.png';
+const designFooters = {};
+for(const design of ['red-bow', 'burgundy-ribbons', 'pink-bow']){
+  const image = new Image();
+  const ready = new Promise((resolve, reject)=>{
+    image.onload = resolve;
+    image.onerror = reject;
+  });
+  ready.catch(()=>{});
+  designFooters[design] = {image, ready};
+  image.src = 'images/' + design + '.png';
+}
 
 const $ = id => document.getElementById(id);
 const elDate = $('date'), elNum = $('number'), elAmt = $('amount'), elWish = $('wish');
@@ -332,11 +336,12 @@ function fmtAmount(v){
 function draw(){
   if(!imgReady) return;
   ctx.clearRect(0,0,827,1280);
-  if(selectedDesign === 'burgundy-ribbons'){
+  if(designFooters[selectedDesign]){
+    const footer = designFooters[selectedDesign].image;
     // Full-width original photograph with a soft transition into the card footer.
-    const footerY = 1040 / 1280 * burgundyFooter.naturalHeight;
-    ctx.drawImage(burgundyFooter,0,footerY,burgundyFooter.naturalWidth,1,0,940,827,100);
-    ctx.drawImage(burgundyFooter,0,footerY,burgundyFooter.naturalWidth,burgundyFooter.naturalHeight-footerY,0,1040,827,240);
+    const footerY = 1040 / 1280 * footer.naturalHeight;
+    ctx.drawImage(footer,0,footerY,footer.naturalWidth,1,0,940,827,100);
+    ctx.drawImage(footer,0,footerY,footer.naturalWidth,footer.naturalHeight-footerY,0,1040,827,240);
     const photo = document.createElement('canvas');
     photo.width = 827; photo.height = 1040;
     const photoCtx = photo.getContext('2d');
@@ -457,8 +462,8 @@ function selectDesign(value){
 }
 img.onload = async ()=>{
   const loadedDesign = selectedDesign;
-  if(loadedDesign === 'burgundy-ribbons'){
-    try{ await burgundyFooterReady; }
+  if(designFooters[loadedDesign]){
+    try{ await designFooters[loadedDesign].ready; }
     catch{ if(selectedDesign === loadedDesign) img.onerror(); return; }
     if(selectedDesign !== loadedDesign) return;
   }
