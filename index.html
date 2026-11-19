@@ -185,7 +185,7 @@ summary{cursor:pointer;color:var(--burgundy);font-weight:700}
       <legend>Оформление карты</legend>
       <div class="design-options">
         <label class="design-option"><input type="radio" name="design" value="red-bow" ><img src="images/red-bow.png" alt=""><span>Красный бант</span></label>
-        <label class="design-option"><input type="radio" name="design" value="burgundy-ribbons" ><img src="images/burgundy-ribbons.png" alt=""><span>Бордовые ленты</span></label>
+        <label class="design-option"><input type="radio" name="design" value="burgundy-ribbons" ><img src="images/burgundy-original.jpg" alt=""><span>Бордовые ленты</span></label>
         <label class="design-option"><input type="radio" name="design" value="pink-bow" ><img src="images/pink-bow.png" alt=""><span>Розовый бант</span></label>
         <label class="design-option"><input type="radio" name="design" value="original" checked><img id="original-thumbnail" alt=""><span>Цветы</span></label>
       </div>
@@ -296,10 +296,17 @@ let imgReady = false;
 const designs = {
   original: IMG_SRC,
   'red-bow': 'images/red-bow.png',
-  'burgundy-ribbons': 'images/burgundy-ribbons.png',
+  'burgundy-ribbons': 'images/burgundy-original.jpg',
   'pink-bow': 'images/pink-bow.png'
 };
 let selectedDesign = 'original';
+const burgundyFooter = new Image();
+const burgundyFooterReady = new Promise((resolve, reject)=>{
+  burgundyFooter.onload = resolve;
+  burgundyFooter.onerror = reject;
+});
+burgundyFooterReady.catch(()=>{});
+burgundyFooter.src = 'images/burgundy-ribbons.png';
 
 const $ = id => document.getElementById(id);
 const elDate = $('date'), elNum = $('number'), elAmt = $('amount'), elWish = $('wish');
@@ -325,7 +332,19 @@ function fmtAmount(v){
 function draw(){
   if(!imgReady) return;
   ctx.clearRect(0,0,827,1280);
-  ctx.drawImage(img,0,0,827,1280);
+  if(selectedDesign === 'burgundy-ribbons'){
+    // Use the actual photograph, preserving its proportions and complete framing.
+    // The original photo occupies the upper area; the existing card footer stays separate.
+    ctx.fillStyle = '#751321';
+    ctx.fillRect(0,0,827,1040);
+    const photoHeight = 1040;
+    const photoWidth = img.naturalWidth / img.naturalHeight * photoHeight;
+    ctx.drawImage(img,(827-photoWidth)/2,0,photoWidth,photoHeight);
+    const footerY = 1040 / 1280 * burgundyFooter.naturalHeight;
+    ctx.drawImage(burgundyFooter,0,footerY,burgundyFooter.naturalWidth,burgundyFooter.naturalHeight-footerY,0,1040,827,240);
+  }else{
+    ctx.drawImage(img,0,0,827,1280);
+  }
 
   // Дата — слева, выровнена по левому краю, бордовая, рядом с подписью
   const dateVal = elDate.value.trim();
@@ -429,7 +448,13 @@ function selectDesign(value){
   document.dispatchEvent(new Event('aprell-design-state'));
   img.src = designs[value];
 }
-img.onload = ()=>{
+img.onload = async ()=>{
+  const loadedDesign = selectedDesign;
+  if(loadedDesign === 'burgundy-ribbons'){
+    try{ await burgundyFooterReady; }
+    catch{ if(selectedDesign === loadedDesign) img.onerror(); return; }
+    if(selectedDesign !== loadedDesign) return;
+  }
   imgReady = true;
   cv.setAttribute('aria-busy', 'false');
   $('design-status').textContent = '';
