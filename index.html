@@ -185,9 +185,9 @@ summary{cursor:pointer;color:var(--burgundy);font-weight:700}
       <legend>Оформление карты</legend>
       <div class="design-options">
         <label class="design-option"><input type="radio" name="design" value="red-bow" ><img src="images/red-bow.png" alt=""><span>Красный бант</span></label>
-        <label class="design-option"><input type="radio" name="design" value="burgundy-ribbons" ><img src="images/burgundy-original.jpg" alt=""><span>Бордовые ленты</span></label>
+        <label class="design-option"><input type="radio" name="design" value="burgundy-ribbons" checked><img src="images/burgundy-original.jpg" alt=""><span>Бордовые ленты</span></label>
         <label class="design-option"><input type="radio" name="design" value="pink-bow" ><img src="images/pink-bow.png" alt=""><span>Розовый бант</span></label>
-        <label class="design-option"><input type="radio" name="design" value="original" checked><img id="original-thumbnail" alt=""><span>Цветы</span></label>
+        <label class="design-option"><input type="radio" name="design" value="original"><img id="original-thumbnail" alt=""><span>Цветы</span></label>
       </div>
       <div class="design-status" id="design-status" role="status" aria-live="polite"></div>
     </fieldset>
@@ -299,7 +299,7 @@ const designs = {
   'burgundy-ribbons': 'images/burgundy-original.jpg',
   'pink-bow': 'images/pink-bow.png'
 };
-let selectedDesign = 'original';
+let selectedDesign = 'burgundy-ribbons';
 const burgundyFooter = new Image();
 const burgundyFooterReady = new Promise((resolve, reject)=>{
   burgundyFooter.onload = resolve;
@@ -478,7 +478,7 @@ document.querySelectorAll('input[name="design"]').forEach(input=>{
   input.addEventListener('change', ()=>selectDesign(input.value));
   input.addEventListener('click', ()=>{ if(!imgReady && selectedDesign === input.value) selectDesign(input.value); });
 });
-selectDesign('original');
+selectDesign('burgundy-ribbons');
 
 // ensure fonts loaded before first crisp draw
 function forceCaveatActivation(){
