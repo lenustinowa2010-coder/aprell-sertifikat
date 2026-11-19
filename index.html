@@ -333,15 +333,22 @@ function draw(){
   if(!imgReady) return;
   ctx.clearRect(0,0,827,1280);
   if(selectedDesign === 'burgundy-ribbons'){
-    // Use the actual photograph, preserving its proportions and complete framing.
-    // The original photo occupies the upper area; the existing card footer stays separate.
-    ctx.fillStyle = '#751321';
-    ctx.fillRect(0,0,827,1040);
-    const photoHeight = 1040;
-    const photoWidth = img.naturalWidth / img.naturalHeight * photoHeight;
-    ctx.drawImage(img,(827-photoWidth)/2,0,photoWidth,photoHeight);
+    // Full-width original photograph with a soft transition into the card footer.
     const footerY = 1040 / 1280 * burgundyFooter.naturalHeight;
+    ctx.drawImage(burgundyFooter,0,footerY,burgundyFooter.naturalWidth,1,0,940,827,100);
     ctx.drawImage(burgundyFooter,0,footerY,burgundyFooter.naturalWidth,burgundyFooter.naturalHeight-footerY,0,1040,827,240);
+    const photo = document.createElement('canvas');
+    photo.width = 827; photo.height = 1040;
+    const photoCtx = photo.getContext('2d');
+    const photoHeight = 827 * img.naturalHeight / img.naturalWidth;
+    photoCtx.drawImage(img,0,0,827,photoHeight);
+    photoCtx.globalCompositeOperation = 'destination-out';
+    const fade = photoCtx.createLinearGradient(0,940,0,1040);
+    fade.addColorStop(0,'rgba(0,0,0,0)');
+    fade.addColorStop(1,'rgba(0,0,0,1)');
+    photoCtx.fillStyle = fade;
+    photoCtx.fillRect(0,940,827,100);
+    ctx.drawImage(photo,0,0);
   }else{
     ctx.drawImage(img,0,0,827,1280);
   }
